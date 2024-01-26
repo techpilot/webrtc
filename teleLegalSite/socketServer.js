@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const linkSecret = "thisisasecret";
 
 const connectedProfessionals = [];
+const connectedClients = [];
 
 const allKnownOffers = {
   // uniqueId - key
@@ -64,10 +65,45 @@ io.on("connection", (socket) => {
       }
     }
   } else {
-    //
+    // this is client
+    const { professionalsFullName, uuid, clientName } = decodedData
+
+    // check to see if the client is already in the array
+    const clientExist = connectedClients.find(c => c.uuid == uuid)
+
+    if(clientExist) {
+      clientExist.socketId = socket.id
+    } else {
+      connectedClients.push({
+        clientName,
+        uuid,
+        professionalMeetingWith: professionalsFullName,
+        socketId: socket.id
+      })
+    }
+
+
+    const offerForThisClient = allKnownOffers[uuid]
+    if(offerForThisClient) {
+      io.to(socket.id).emit('answerToClient', offerForThisClient.answer)
+    }
   }
 
   //   console.log(connectedProfessionals);
+
+  socket.on('newAnswer', ({answer, uuid})=> {
+    // emit this to the client
+    const socketToSendTo = connectedClients.find(c => c.uuid == uuid)
+    if(socketToSendTo) {
+      socket.to(socketToSendTo.socketId).emit('answerToClient', answer)
+    }
+
+    // update the offer
+    const knownOffer = allKnownOffers[uuid]
+    if(knownOffer) {
+      knownOffer.answer = answer
+    }
+  })
 
   socket.on("newOffer", ({ offer, apptInfo }) => {
     // console.log(offer);
