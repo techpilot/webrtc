@@ -144,4 +144,31 @@ io.on("connection", (socket) => {
       );
     }
   });
+
+  socket.on('getIce', (uuid, who, ackFunc) => {
+    console.log(uuid,who,ackFunc)
+    const offer = allKnownOffers[uuid]
+    let iceCandidates = []
+    if(who === 'professional') {
+      iceCandidates = offer.offererIceCandidates
+    } else if(who === 'client') {
+      iceCandidates = offer.answerIceCandidates
+    }
+
+    ackFunc(iceCandidates)
+  })
+
+  socket.on('iceToServer', ({iceC, who, uuid}) => {
+    console.log("======================", who)
+
+    const offerToUpdate = allKnownOffers[uuid]
+    if(offerToUpdate) {
+      if(who === "client") {
+        // the client has sent up an icecandidate, update the offerss
+        offerToUpdate.offererIceCandidates.push(iceC)
+      } else if(who === "professional") {
+        offerToUpdate.answerIceCandidates.push(iceC)
+      }
+    }
+  })
 });
