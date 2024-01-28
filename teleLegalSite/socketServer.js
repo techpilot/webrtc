@@ -166,8 +166,16 @@ io.on("connection", (socket) => {
       if(who === "client") {
         // the client has sent up an icecandidate, update the offerss
         offerToUpdate.offererIceCandidates.push(iceC)
+        const socketToSendTo = connectedProfessionals.find(cp => cp.fullName === decodedData.professionalsFullName)
+        if(socketToSendTo) {
+          socket.to(socketToSendTo.socketId).emit('iceToClient', iceC)
+        }
       } else if(who === "professional") {
         offerToUpdate.answerIceCandidates.push(iceC)
+        const socketToSendTo = connectedClients.find(cp => cp.uuid == uuid)
+        if(socketToSendTo) {
+          socket.to(socketToSendTo.socketId).emit('iceToClient', iceC)
+        }
       }
     }
   })
